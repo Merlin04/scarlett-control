@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+alsa = "0.9.1"
 eframe = { version = "0.30.0", features = ["accesskit", "default_fonts", "glow", "persistence", "wayland"] }
 egui = "0.30.0"
 egui_flex = "0.2.0"

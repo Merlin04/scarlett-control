@@ -5,22 +5,18 @@ use egui_flex::{item, Flex, FlexAlign, FlexJustify};
 use egui_material_icons::{icon_button, icons::{ICON_ADD, ICON_CIRCLE, ICON_DELETE, ICON_JOIN, ICON_POWER, ICON_POWER_OFF, ICON_UNDO, ICON_VOLUME_OFF, ICON_VOLUME_UP}};
 use strum::VariantArray;
 
-use crate::{state::{AudioSource, MixerEntry, MixerOutput}, theme};
+use crate::{device::{self, Device}, state::{AudioSource, MixerEntry, MixerOutput}, theme};
 
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
 pub struct ScarlettControlApp {
-    // test
-    test: String,
-    // selected: Option<AudioSource>
-    capture: [Option<AudioSource>; 18],
-    // TODO make this fixed size array to manage IDs better
-    mixer_entries: Vec<MixerEntry>,
-    global_gain: f32,
-    global_mute: bool,
-    hi_z_1: bool,
-    hi_z_2: bool,
-    outputs: [MixerOutput; 3]
+    pub capture: [Option<AudioSource>; 18],
+    pub mixer_entries: Vec<MixerEntry>,
+    pub global_gain: f32,
+    pub global_mute: bool,
+    pub hi_z_1: bool,
+    pub hi_z_2: bool,
+    pub outputs: [MixerOutput; 3]
 }
 
 impl Default for ScarlettControlApp {
@@ -34,7 +30,6 @@ impl Default for ScarlettControlApp {
         };
 
         Self {
-            test: "wahoo!".to_owned(),
             capture: std::array::from_fn(|i| Some(AudioSource::VARIANTS[i])),
             mixer_entries: Vec::new(),
             global_gain: 0.0,
@@ -54,12 +49,12 @@ impl ScarlettControlApp {
     // called once before first frame
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // can customize look and feel !
-        // cc.egui_ctx.set_fonts();
 
         egui_material_icons::initialize(&cc.egui_ctx);
         cc.egui_ctx.add_font(theme::font());
         cc.egui_ctx.set_visuals(theme::visuals(cc.egui_ctx.style().visuals.clone()));
 
+        let d = Device::new();
 
         if let Some(storage) = cc.storage {
             eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
