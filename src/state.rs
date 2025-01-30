@@ -1,6 +1,6 @@
-use strum::VariantArray;
+use crate::device::{Device, EnumIndex};
 
-#[derive(serde::Serialize, serde::Deserialize, strum_macros::Display, strum_macros::VariantArray, PartialEq, Copy, Clone)]
+/*#[derive(serde::Serialize, serde::Deserialize, strum_macros::Display, strum_macros::VariantArray, PartialEq, Copy, Clone)]
 pub enum AudioSource {
     #[strum(to_string = "Analog 1")]
     Analog1,
@@ -78,13 +78,13 @@ pub enum AudioDestination {
     MixE,
     #[strum(to_string = "Mix F")]
     MixF
-}
+}*/
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct MixerDestination {
     pub stereo: bool,
-    pub dest: AudioDestination,
-    pub dest_r: AudioDestination,
+    pub dest: EnumIndex,
+    pub dest_r: EnumIndex,
     pub split: bool,
     pub gain: f32
 }
@@ -95,8 +95,8 @@ pub struct MixerEntry {
     pub enabled: bool,
     pub stereo: bool,
     pub split: bool,
-    pub source: AudioSource,
-    pub source_r: AudioSource,
+    pub source: EnumIndex,
+    pub source_r: EnumIndex,
     pub dests: Vec<MixerDestination>
 }
 
@@ -111,25 +111,25 @@ fn find_false_pair(sl: &[bool]) -> Option<usize> {
 }
 
 impl MixerEntry {
-    pub fn new() -> Self {
+    pub fn new(device: &Device) -> Self {
         let mut e = Self {
             name: "Unnamed".to_owned(),
             enabled: true,
             stereo: false,
             split: false,
-            source: AudioSource::Analog1,
-            source_r: AudioSource::Analog2,
+            source: 0/*AudioSource::Analog1*/,
+            source_r: 1/*AudioSource::Analog2*/,
             dests: Vec::new()
         };
-        e.add_dest();
+        e.add_dest(device);
         e
     }
 
-    pub fn add_dest(&mut self) {
+    pub fn add_dest(&mut self, device: &Device) {
         let mut used = [false; 6];
         self.dests.iter()
             .flat_map(|d| if d.stereo { vec![ d.dest, d.dest_r ] } else { vec![ d.dest ]})
-            .map(|d| AudioDestination::VARIANTS.iter().position(|v| *v == d).unwrap())
+            // .map(|d| AudioDestination::VARIANTS.iter().position(|v| *v == d).unwrap())
             .for_each(|cur| { used[cur] = true; });
 
         let stereo = self.stereo;
@@ -146,22 +146,24 @@ impl MixerEntry {
         self.dests.push(MixerDestination {
             gain: 0.0,
             stereo,
-            dest: available.map_or(AudioDestination::MixA, |i| AudioDestination::VARIANTS[i]),
-            dest_r: available.map_or(AudioDestination::MixB, |i| if i + 1 < AudioDestination::VARIANTS.len() {
-                AudioDestination::VARIANTS[i + 1]
+            dest: available.unwrap_or(0 /*AudioDestination::MixA, |i| AudioDestination::VARIANTS[i]*/),
+            dest_r: available.map_or(1 /*AudioDestination::MixB*/, |i| if i + 1 < /*AudioDestination::VARIANTS*/device.mixer_destinations.len() {
+                // AudioDestination::VARIANTS[i + 1]
+                i + 1
             } else {
-                AudioDestination::MixF
+                // AudioDestination::MixF
+                device.mixer_destinations.len() - 1
             }),
             split: false
         });
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Default)]
 pub struct MixerOutput {
     pub name: String,
     pub gain: f32,
     pub mute: bool,
-    pub source: (AudioSource, AudioSource),
+    pub source: (EnumIndex, EnumIndex),
     pub split: bool
 }
